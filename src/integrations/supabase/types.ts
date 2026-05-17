@@ -14,7 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cards: {
+        Row: {
+          created_at: string
+          deck_id: string
+          definition: string | null
+          example: string | null
+          id: string
+          part_of_speech: string | null
+          translation: string | null
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          deck_id: string
+          definition?: string | null
+          example?: string | null
+          id?: string
+          part_of_speech?: string | null
+          translation?: string | null
+          word: string
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string
+          definition?: string | null
+          example?: string | null
+          id?: string
+          part_of_speech?: string | null
+          translation?: string | null
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

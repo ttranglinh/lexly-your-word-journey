@@ -1,5 +1,6 @@
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { Search, Library, GraduationCap } from "lucide-react";
+import type { ReactNode } from "react";
 
 const tabs = [
   { to: "/", label: "Search", icon: Search },
@@ -7,7 +8,7 @@ const tabs = [
   { to: "/study", label: "Study", icon: GraduationCap },
 ] as const;
 
-export function MobileLayout() {
+export function MobileLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -19,9 +20,7 @@ export function MobileLayout() {
       </header>
 
       <main className="flex-1 px-5 py-6 pb-28">
-        <div className="max-w-xl mx-auto w-full">
-          <Outlet />
-        </div>
+        <div className="max-w-xl mx-auto w-full">{children}</div>
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 border-t border-border bg-background/95 backdrop-blur">

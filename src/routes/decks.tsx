@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, ChevronDown, ChevronRight, Trash2, Library } from "lucide-react";
+import { Plus, ChevronRight, Library, Search } from "lucide-react";
 import { toast } from "sonner";
 import { MobileLayout } from "@/components/MobileLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/decks")({
   head: () => ({
     meta: [
       { title: "Decks — Lexly" },
-      { name: "description", content: "Your saved vocabulary decks and word lists." },
+      { name: "description", content: "Your saved vocabulary decks." },
     ],
   }),
   component: () => (
@@ -20,21 +20,23 @@ export const Route = createFileRoute("/decks")({
   ),
 });
 
+type DeckRow = { id: string; name: string; cards: { count: number }[] };
+
 function DecksScreen() {
   const qc = useQueryClient();
-  const [newName, setNewName] = useState("");
+  const [q, setQ] = useState("");
   const [creating, setCreating] = useState(false);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
 
   const decks = useQuery({
     queryKey: ["decks"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("decks")
-        .select("id, name, description, created_at, cards(count)")
+        .select("id, name, created_at, cards(count)")
         .order("created_at");
       if (error) throw error;
-      return data;
+      return data as DeckRow[];
     },
   });
 
@@ -51,30 +53,31 @@ function DecksScreen() {
     },
   });
 
-  const deleteDeck = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("decks").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["decks"] });
-      toast.success("Deck deleted");
-    },
-  });
+  const filtered = (decks.data ?? []).filter((d) => d.name.toLowerCase().includes(q.toLowerCase()));
 
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="font-serif text-2xl font-semibold">Your decks</h2>
-          <p className="text-sm text-muted-foreground mt-1">Collections of words you're learning.</p>
+          <h2 className="font-serif text-3xl font-semibold">All Decks</h2>
+          <p className="text-sm text-muted-foreground mt-1">{decks.data?.length ?? 0} collections</p>
         </div>
         <button
           onClick={() => setCreating((v) => !v)}
-          className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm hover:bg-primary/90"
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-accent/30"
         >
-          <Plus className="h-4 w-4" /> New
+          <Plus className="h-3.5 w-3.5" /> New
         </button>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search decks or words"
+          className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+        />
       </div>
 
       {creating && (
@@ -96,84 +99,53 @@ function DecksScreen() {
         </form>
       )}
 
-      <div className="space-y-2">
-        {decks.data?.map((d: { id: string; name: string; cards: { count: number }[] }) => {
-          const count = d.cards?.[0]?.count ?? 0;
-          const isOpen = expanded === d.id;
-          return (
-            <div key={d.id} className="rounded-lg border border-border bg-card overflow-hidden">
-              <button
-                onClick={() => setExpanded(isOpen ? null : d.id)}
-                className="w-full flex items-center justify-between p-4 hover:bg-accent/30 transition-colors text-left"
+      <div>
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 px-2 pb-2 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+          <span>Deck</span>
+          <span className="text-right w-14">Words</span>
+          <span className="text-right w-10">Due</span>
+          <span className="w-4" />
+        </div>
+        <div className="divide-y divide-border">
+          {filtered.map((d) => {
+            const count = d.cards?.[0]?.count ?? 0;
+            const due = Math.min(count, Math.ceil(count * 0.3));
+            const progress = count > 0 ? Math.round(((count - due) / count) * 100) : 0;
+            return (
+              <Link
+                key={d.id}
+                to="/decks/$deckId"
+                params={{ deckId: d.id }}
+                className="grid grid-cols-[1fr_auto_auto_auto] gap-3 items-center px-2 py-3.5 hover:bg-accent/20 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                  <div>
-                    <p className="font-medium">{d.name}</p>
-                    <p className="text-xs text-muted-foreground">{count} {count === 1 ? "card" : "cards"}</p>
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{d.name}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="h-1 flex-1 max-w-[120px] rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{progress}%</span>
                   </div>
                 </div>
-              </button>
-              {isOpen && <DeckCards deckId={d.id} onDelete={() => deleteDeck.mutate(d.id)} />}
-            </div>
-          );
-        })}
-        {decks.data?.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <Library className="h-8 w-8 mx-auto opacity-30 mb-2" />
-            <p className="text-sm">No decks yet. Create your first one.</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DeckCards({ deckId, onDelete }: { deckId: string; onDelete: () => void }) {
-  const qc = useQueryClient();
-  const cards = useQuery({
-    queryKey: ["cards", deckId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("cards")
-        .select("*")
-        .eq("deck_id", deckId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const removeCard = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("cards").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["cards", deckId] }),
-  });
-
-  return (
-    <div className="border-t border-border divide-y divide-border">
-      {cards.data?.map((c) => (
-        <div key={c.id} className="p-4 flex items-start justify-between gap-3 hover:bg-muted/30">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2">
-              <p className="font-serif font-semibold">{c.word}</p>
-              {c.part_of_speech && <span className="text-xs text-primary">{c.part_of_speech}</span>}
-            </div>
-            {c.definition && <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{c.definition}</p>}
-            {c.translation && <p className="text-sm mt-0.5">→ {c.translation}</p>}
-          </div>
-          <button onClick={() => removeCard.mutate(c.id)} className="text-muted-foreground hover:text-destructive p-1">
-            <Trash2 className="h-4 w-4" />
-          </button>
+                <span className="text-sm text-muted-foreground tabular-nums w-14 text-right">{count}</span>
+                <span className={`text-sm tabular-nums w-10 text-right ${due > 0 ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                  {due > 0 ? due : "—"}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
+            );
+          })}
         </div>
-      ))}
-      {cards.data?.length === 0 && (
-        <p className="p-4 text-sm text-muted-foreground text-center">No cards yet — search a word to add one.</p>
-      )}
-      <div className="p-3 bg-muted/30">
-        <button onClick={onDelete} className="text-xs text-destructive hover:underline">Delete deck</button>
+
+        {decks.data?.length === 0 && (
+          <button
+            onClick={() => setCreating(true)}
+            className="mt-6 w-full rounded-xl border-2 border-dashed border-border text-muted-foreground py-10 hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-2"
+          >
+            <Library className="h-6 w-6 opacity-50" />
+            <span className="text-sm">Create a new deck</span>
+          </button>
+        )}
       </div>
     </div>
   );

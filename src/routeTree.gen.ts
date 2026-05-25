@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudyRouteImport } from './routes/study'
+import { Route as StatsRouteImport } from './routes/stats'
 import { Route as LookupRouteImport } from './routes/lookup'
 import { Route as DecksRouteImport } from './routes/decks'
 import { Route as IndexRouteImport } from './routes/index'
@@ -19,6 +20,11 @@ import { Route as StudyDeckIdModeRouteImport } from './routes/study.$deckId.$mod
 const StudyRoute = StudyRouteImport.update({
   id: '/study',
   path: '/study',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LookupRoute = LookupRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/decks': typeof DecksRouteWithChildren
   '/lookup': typeof LookupRoute
+  '/stats': typeof StatsRoute
   '/study': typeof StudyRouteWithChildren
   '/decks/$deckId': typeof DecksDeckIdRoute
   '/study/$deckId/$mode': typeof StudyDeckIdModeRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/decks': typeof DecksRouteWithChildren
   '/lookup': typeof LookupRoute
+  '/stats': typeof StatsRoute
   '/study': typeof StudyRouteWithChildren
   '/decks/$deckId': typeof DecksDeckIdRoute
   '/study/$deckId/$mode': typeof StudyDeckIdModeRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/decks': typeof DecksRouteWithChildren
   '/lookup': typeof LookupRoute
+  '/stats': typeof StatsRoute
   '/study': typeof StudyRouteWithChildren
   '/decks/$deckId': typeof DecksDeckIdRoute
   '/study/$deckId/$mode': typeof StudyDeckIdModeRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/decks'
     | '/lookup'
+    | '/stats'
     | '/study'
     | '/decks/$deckId'
     | '/study/$deckId/$mode'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/decks'
     | '/lookup'
+    | '/stats'
     | '/study'
     | '/decks/$deckId'
     | '/study/$deckId/$mode'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/decks'
     | '/lookup'
+    | '/stats'
     | '/study'
     | '/decks/$deckId'
     | '/study/$deckId/$mode'
@@ -103,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DecksRoute: typeof DecksRouteWithChildren
   LookupRoute: typeof LookupRoute
+  StatsRoute: typeof StatsRoute
   StudyRoute: typeof StudyRouteWithChildren
 }
 
@@ -113,6 +126,13 @@ declare module '@tanstack/react-router' {
       path: '/study'
       fullPath: '/study'
       preLoaderRoute: typeof StudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lookup': {
@@ -177,8 +197,19 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DecksRoute: DecksRouteWithChildren,
   LookupRoute: LookupRoute,
+  StatsRoute: StatsRoute,
   StudyRoute: StudyRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

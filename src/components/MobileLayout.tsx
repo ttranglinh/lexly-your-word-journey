@@ -1,15 +1,19 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Search, Library, GraduationCap } from "lucide-react";
+import { Home, Search, Library, BarChart3 } from "lucide-react";
 import type { ReactNode } from "react";
 
 const tabs = [
-  { to: "/", label: "Search", icon: Search },
-  { to: "/decks", label: "Decks", icon: Library },
-  { to: "/study", label: "Study", icon: GraduationCap },
+  { to: "/", label: "Home", icon: Home, exact: true },
+  { to: "/lookup", label: "Look Up", icon: Search, exact: false },
+  { to: "/decks", label: "Decks", icon: Library, exact: false },
+  { to: "/stats", label: "Stats", icon: BarChart3, exact: false },
 ] as const;
 
-export function MobileLayout({ children }: { children: ReactNode }) {
+export function MobileLayout({ children, hideChrome = false }: { children: ReactNode; hideChrome?: boolean }) {
   const { pathname } = useLocation();
+  if (hideChrome) {
+    return <div className="min-h-screen bg-background">{children}</div>;
+  }
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="px-5 pt-6 pb-3 border-b border-border/60">
@@ -24,14 +28,14 @@ export function MobileLayout({ children }: { children: ReactNode }) {
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 border-t border-border bg-background/95 backdrop-blur">
-        <div className="max-w-xl mx-auto grid grid-cols-3">
-          {tabs.map(({ to, label, icon: Icon }) => {
-            const active = pathname === to;
+        <div className="max-w-xl mx-auto grid grid-cols-4">
+          {tabs.map(({ to, label, icon: Icon, exact }) => {
+            const active = exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
             return (
               <Link
                 key={to}
                 to={to}
-                className={`flex flex-col items-center gap-1 py-3 text-xs transition-colors ${
+                className={`flex flex-col items-center gap-1 py-3 text-[11px] transition-colors ${
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >

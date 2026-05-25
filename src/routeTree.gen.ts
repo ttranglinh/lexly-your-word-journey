@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudyRouteImport } from './routes/study'
+import { Route as LookupRouteImport } from './routes/lookup'
 import { Route as DecksRouteImport } from './routes/decks'
 import { Route as IndexRouteImport } from './routes/index'
 
 const StudyRoute = StudyRouteImport.update({
   id: '/study',
   path: '/study',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LookupRoute = LookupRouteImport.update({
+  id: '/lookup',
+  path: '/lookup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DecksRoute = DecksRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/decks': typeof DecksRoute
+  '/lookup': typeof LookupRoute
   '/study': typeof StudyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/decks': typeof DecksRoute
+  '/lookup': typeof LookupRoute
   '/study': typeof StudyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/decks': typeof DecksRoute
+  '/lookup': typeof LookupRoute
   '/study': typeof StudyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/decks' | '/study'
+  fullPaths: '/' | '/decks' | '/lookup' | '/study'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/decks' | '/study'
-  id: '__root__' | '/' | '/decks' | '/study'
+  to: '/' | '/decks' | '/lookup' | '/study'
+  id: '__root__' | '/' | '/decks' | '/lookup' | '/study'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DecksRoute: typeof DecksRoute
+  LookupRoute: typeof LookupRoute
   StudyRoute: typeof StudyRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/study'
       fullPath: '/study'
       preLoaderRoute: typeof StudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lookup': {
+      id: '/lookup'
+      path: '/lookup'
+      fullPath: '/lookup'
+      preLoaderRoute: typeof LookupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/decks': {
@@ -88,8 +105,19 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DecksRoute: DecksRoute,
+  LookupRoute: LookupRoute,
   StudyRoute: StudyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
